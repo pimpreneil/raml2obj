@@ -67,12 +67,35 @@ function _addRaml2htmlProperties(ramlObj, parentUrl, allUriParameters) {
   return ramlObj;
 }
 
+function _cleanupProperties(item) {
+    if (item.hasOwnProperty('properties')) {
+        Object.keys(item['properties']).forEach(key => {
+            if (item['properties'][key].hasOwnProperty('type') &&
+                item['properties'][key]['type'].length &&
+                item['properties'][key]['type'][0] == 'array' &&
+                item['properties'][key].hasOwnProperty('items') &&
+                item['properties'][key]['items'].length
+            ) {
+                item['properties'][key]['items'] = item['properties'][key]['items'][0];
+            }
+            if (item['properties'][key].hasOwnProperty('properties')) {
+                item['properties'][key] = _cleanupProperties(item['properties'][key]);
+            }
+        });
+    }
+
+    return item;
+}
+
 // This uses the datatype-expansion library to expand all the root type to their canonical expanded form
 function _expandRootTypes(types) {
   if (!types) {
     return types;
   }
 
+  Object.keys(types).forEach(key => {
+      types[key] = _cleanupProperties(types[key]);
+  });
   Object.keys(types).forEach(key => {
     tools.expandedForm(types[key], types, (err, expanded) => {
       if (expanded) {
